@@ -1,25 +1,25 @@
 const mongoose = require('mongoose')
 const mongooseStringQuery = require('mongoose-string-query')
 
-const Card = require('../models/card')
+const Lane = require('../models/lane')
 
-const LaneSchema = new mongoose.Schema(
+const BoardSchema = new mongoose.Schema(
     {
-        laneName: {
+        boardName: {
             type: String,
             required: true,
             trim: true,
         },
         // https://stackoverflow.com/questions/18001478/referencing-another-schema-in-mongoose
-        cards: {
-            type: Array,
-            default: [],
+        lanes: {
+            type: [Lane.schema],
+            required: true,
         },
     },
     {minimize: false}
 )
 
-LaneSchema.plugin(mongooseStringQuery)
+BoardSchema.plugin(mongooseStringQuery)
 
-const Lane = mongoose.model('Lane', LaneSchema)
-module.exports = Lane
+const Board = mongoose.model('Board', BoardSchema)
+module.exports = Board
