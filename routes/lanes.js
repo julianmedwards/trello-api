@@ -80,6 +80,7 @@ function updateLane(req, res, next) {
     getBoard.then(
         (board) => {
             board.lanes.id(req.params.id).laneName = data.laneName
+            board.markModified('lanes')
             board.save(function (err) {
                 if (err) {
                     console.error(err)
