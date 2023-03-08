@@ -37,7 +37,7 @@ function getBoards(req, res, next) {
 }
 
 function getBoard(req, res, next) {
-    Board.findOne({_id: req.params.board_id}, function (err, doc) {
+    Board.findOne({_id: req.params.id}, function (err, doc) {
         if (err) {
             console.error(err)
             return next(new errors.InvalidContentError(err.errors.name.message))
@@ -51,5 +51,5 @@ function getBoard(req, res, next) {
 module.exports = (server) => {
     server.post('/boards', addBoard)
     server.get('/boards', getBoards)
-    server.get('/boards/:board_id', getBoard)
+    server.get('/boards/:id', getBoard)
 }

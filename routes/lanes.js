@@ -58,6 +58,46 @@ function getLanes(req, res, next) {
     })
 }
 
+function updateLane(req, res, next) {
+    if (!req.is('application/json')) {
+        return next(
+            new errors.InvalidContentError("Expects 'application/json'")
+        )
+    }
+
+    let data = req.body
+
+    let getBoard = new Promise((resolve, reject) => {
+        Board.findOne({'lanes._id': req.params.id}, (err, docs) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(docs)
+            }
+        })
+    })
+
+    getBoard.then(
+        (board) => {
+            board.lanes.id(req.params.id).laneName = data.laneName
+            board.save(function (err) {
+                if (err) {
+                    console.error(err)
+                    return next(new errors.InternalError(err.message))
+                }
+
+                res.setHeader('Access-Control-Allow-Origin', '*')
+                res.send(204)
+                next()
+            })
+        },
+        (err) => {
+            console.error(err)
+            next(new errors.InternalError(err.message))
+        }
+    )
+}
+
 function deleteLane(req, res, next) {
     let getBoard = new Promise((resolve, reject) => {
         Board.findOne({'lanes._id': req.params.id}, (err, docs) => {
@@ -88,33 +128,11 @@ function deleteLane(req, res, next) {
             next(new errors.InternalError(err.message))
         }
     )
-
-    //     getBoard.then(
-    //         (board) => {
-    //             console.log(board)
-    //             board.lanes.push(lane)
-
-    //             board.lanes.remove({_id: req.params.id}, function (err) {
-    //                 if (err) {
-    //                     console.error(err)
-    //                     return next(
-    //                         new errors.InvalidContentError(err.errors.name.message)
-    //                     )
-    //                 }
-
-    //                 res.send(204)
-    //                 next()
-    //             })
-    //         },
-    //         (err) => {
-    //             console.error(err)
-    //             next(new errors.InternalError(err.message))
-    //         }
-    //     )
 }
 
 module.exports = (server) => {
     server.post('/lanes', addLane)
     server.get('/lanes', getLanes)
+    server.patch('/lanes/:id', updateLane)
     server.del('/lanes/:id', deleteLane)
 }
