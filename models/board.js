@@ -13,7 +13,6 @@ const BoardSchema = new mongoose.Schema(
         // https://stackoverflow.com/questions/18001478/referencing-another-schema-in-mongoose
         lanes: {
             type: [Lane.schema],
-            required: true,
         },
     },
     {minimize: false}

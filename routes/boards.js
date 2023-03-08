@@ -9,7 +9,7 @@ function addBoard(req, res, next) {
         )
     }
 
-    let data = req.body || {}
+    let data = req.body
 
     let board = new Board(data)
     board.save(function (err) {

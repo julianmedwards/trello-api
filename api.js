@@ -17,17 +17,23 @@ const server = restify.createServer({
 /**
  * Middleware
  */
+server.pre(function crossOrigin(req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*')
+    res.header('Access-Control-Allow-Methods', '*')
+    res.header(
+        'Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Methods'
+    )
+    return next()
+})
+server.opts('*', (req, res, next) => {
+    res.header('Access-Control-Allow-Methods', '*')
+    res.send(204)
+    return next()
+})
 server.use(restify.plugins.jsonBodyParser({mapParams: true}))
 // server.use(restify.plugins.acceptParser(server.acceptable))
 server.use(restify.plugins.queryParser({mapParams: true}))
-server.use(function crossOrigin(req, res, next) {
-    // res.header('Access-Control-Allow-Origin', '*')
-    // res.header(
-    //     'Access-Control-Allow-Headers',
-    //     'Origin, X-Requested-With, Content-Type, Accept'
-    // )
-    return next()
-})
 
 /**
  * Start Server, Connect to DB & Require Routes
@@ -49,6 +55,4 @@ server.listen(config.port, () => {
         require('./routes/index')(server)
         console.log(`Server is listening on port ${config.port}`)
     })
-
-    // require('./routes/index')(server)
 })

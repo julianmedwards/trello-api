@@ -12,8 +12,7 @@ const LaneSchema = new mongoose.Schema(
         },
         // https://stackoverflow.com/questions/18001478/referencing-another-schema-in-mongoose
         cards: {
-            type: Array,
-            default: [],
+            type: [Card.schema],
         },
     },
     {minimize: false}
