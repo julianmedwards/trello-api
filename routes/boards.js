@@ -1,3 +1,4 @@
+const {default: mongoose} = require('mongoose')
 const errors = require('restify-errors')
 
 const Board = require('../models/board')
@@ -37,14 +38,14 @@ function getBoards(req, res, next) {
 }
 
 function getBoard(req, res, next) {
-    Board.findOne({_id: req.params.id}, function (err, doc) {
+    Board.getSequencedBoard(req.params.id, (err, docs) => {
         if (err) {
             console.error(err)
-            return next(new errors.InvalidContentError(err.errors.name.message))
+            next(new errors.InternalError(err.message))
+        } else {
+            res.send(docs[0])
+            next()
         }
-
-        res.send(doc)
-        next()
     })
 }
 

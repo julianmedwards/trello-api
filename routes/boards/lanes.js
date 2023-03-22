@@ -1,7 +1,8 @@
 const errors = require('restify-errors')
+const mongoose = require('mongoose')
 
-const Board = require('../models/board')
-const Lane = require('../models/lane')
+const Board = require('../../models/board')
+const Lane = require('../../models/lane')
 
 function addLane(req, res, next) {
     if (!req.is('application/json')) {
@@ -11,9 +12,10 @@ function addLane(req, res, next) {
     }
 
     let data = req.body
+    console.log(typeof data)
 
     let getBoard = new Promise((resolve, reject) => {
-        Board.findById(data.boardId, (err, docs) => {
+        Board.findById(req.params.boardId, (err, docs) => {
             if (err) {
                 reject(err)
             } else {
@@ -24,7 +26,8 @@ function addLane(req, res, next) {
 
     getBoard.then(
         (board) => {
-            let lane = new Lane(data.laneData)
+            data.sequence = board.lanes.length
+            let lane = new Lane(data)
             board.lanes.push(lane)
 
             board.save(function (err) {
@@ -46,15 +49,16 @@ function addLane(req, res, next) {
 }
 
 function getLanes(req, res, next) {
-    Lane.apiQuery(req.params, function (err, docs) {
+    // Still need to update sequence on move/delete.
+
+    Board.getSequencedLanes(req.params.boardId, (err, docs) => {
         if (err) {
             console.error(err)
-            return next(new errors.InvalidContentError(err.errors.name.message))
+            next(new errors.InternalError(err.message))
+        } else {
+            res.send(docs[0])
+            next()
         }
-
-        console.log(docs)
-        res.send(docs)
-        next()
     })
 }
 
@@ -67,8 +71,16 @@ function updateLane(req, res, next) {
 
     let data = req.body
 
+    if (req.params.laneId !== data.laneId) {
+        return next(
+            new errors.InvalidContentError(
+                'Mismatch between url and request id!'
+            )
+        )
+    }
+
     let getBoard = new Promise((resolve, reject) => {
-        Board.findOne({'lanes._id': req.params.id}, (err, docs) => {
+        Board.findById(req.params.boardId, (err, docs) => {
             if (err) {
                 reject(err)
             } else {
@@ -79,7 +91,53 @@ function updateLane(req, res, next) {
 
     getBoard.then(
         (board) => {
-            board.lanes.id(req.params.id).laneName = data.laneName
+            board.lanes.id(req.params.laneId).laneName = data.laneName
+            board.markModified('lanes')
+            board.save(function (err) {
+                if (err) {
+                    console.error(err)
+                    return next(new errors.InternalError(err.message))
+                }
+
+                res.setHeader('Access-Control-Allow-Origin', '*')
+                res.send(204)
+                next()
+            })
+        },
+        (err) => {
+            console.error(err)
+            next(new errors.InternalError(err.message))
+        }
+    )
+}
+
+function moveLane(req, res, next) {
+    if (!req.is('application/json')) {
+        return next(
+            new errors.InvalidContentError("Expects 'application/json'")
+        )
+    }
+
+    let data = req.body
+
+    let getBoard = new Promise((resolve, reject) => {
+        Board.findById(req.params.boardId, (err, docs) => {
+            if (err) {
+                reject(err)
+            } else {
+                resolve(docs)
+            }
+        })
+    })
+
+    getBoard.then(
+        (board) => {
+            board.updateOne('lanes', {
+                $push: {
+                    $each: [board.lanes.id(req.params.laneId)],
+                    $position: data.newIndex,
+                },
+            })
             board.markModified('lanes')
             board.save(function (err) {
                 if (err) {
@@ -101,7 +159,7 @@ function updateLane(req, res, next) {
 
 function deleteLane(req, res, next) {
     let getBoard = new Promise((resolve, reject) => {
-        Board.findOne({'lanes._id': req.params.id}, (err, docs) => {
+        Board.findById(req.params.boardId, (err, docs) => {
             if (err) {
                 reject(err)
             } else {
@@ -112,7 +170,7 @@ function deleteLane(req, res, next) {
 
     getBoard.then(
         (board) => {
-            board.lanes.id(req.params.id).remove()
+            board.lanes.id(req.params.laneId).remove()
             board.save(function (err) {
                 if (err) {
                     console.error(err)
@@ -132,8 +190,9 @@ function deleteLane(req, res, next) {
 }
 
 module.exports = (server) => {
-    server.post('/lanes', addLane)
-    server.get('/lanes', getLanes)
-    server.patch('/lanes/:id', updateLane)
-    server.del('/lanes/:id', deleteLane)
+    server.post('/boards/:boardId/lanes', addLane)
+    server.get('/boards/:boardId/lanes', getLanes)
+    server.patch('/boards/:boardId/lanes/:laneId', updateLane)
+    server.put('/boards/:boardId/lanes/:laneId', moveLane)
+    server.del('/boards/:boardId/lanes/:laneId', deleteLane)
 }

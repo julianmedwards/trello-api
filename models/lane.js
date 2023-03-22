@@ -10,15 +10,14 @@ const LaneSchema = new mongoose.Schema(
             required: true,
             trim: true,
         },
-        // https://stackoverflow.com/questions/18001478/referencing-another-schema-in-mongoose
-        cards: {
-            type: [Card.schema],
-        },
+        cards: [Card.schema],
+        sequence: Number,
     },
     {minimize: false}
 )
 
 LaneSchema.plugin(mongooseStringQuery)
+LaneSchema.index({sequence: 1, type: -1})
 
 const Lane = mongoose.model('Lane', LaneSchema)
 module.exports = Lane
