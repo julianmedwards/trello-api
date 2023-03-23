@@ -49,8 +49,6 @@ function addLane(req, res, next) {
 }
 
 function getLanes(req, res, next) {
-    // Still need to update sequence on move/delete.
-
     Board.getSequencedLanes(req.params.boardId, (err, docs) => {
         if (err) {
             console.error(err)
@@ -71,14 +69,6 @@ function updateLane(req, res, next) {
 
     let data = req.body
 
-    if (req.params.laneId !== data.laneId) {
-        return next(
-            new errors.InvalidContentError(
-                'Mismatch between url and request id!'
-            )
-        )
-    }
-
     let getBoard = new Promise((resolve, reject) => {
         Board.findById(req.params.boardId, (err, docs) => {
             if (err) {
@@ -91,64 +81,56 @@ function updateLane(req, res, next) {
 
     getBoard.then(
         (board) => {
-            board.lanes.id(req.params.laneId).laneName = data.laneName
-            board.markModified('lanes')
-            board.save(function (err) {
-                if (err) {
-                    console.error(err)
-                    return next(new errors.InternalError(err.message))
+            const updatedLane = board.lanes.id(req.params.laneId)
+
+            const nameUpdate = new Promise((resolve, reject) => {
+                if (data.laneName) {
+                    updatedLane.laneName = data.laneName
                 }
-
-                res.setHeader('Access-Control-Allow-Origin', '*')
-                res.send(204)
-                next()
+                resolve()
             })
-        },
-        (err) => {
-            console.error(err)
-            next(new errors.InternalError(err.message))
-        }
-    )
-}
 
-function moveLane(req, res, next) {
-    if (!req.is('application/json')) {
-        return next(
-            new errors.InvalidContentError("Expects 'application/json'")
-        )
-    }
+            const sequenceUpdate = new Promise((resolve, reject) => {
+                if (data.sequenceShift) {
+                    console.log('to start shiftCompletion.')
+                    const shiftCompletion = Lane.shiftSequence(
+                        Board,
+                        board,
+                        updatedLane,
+                        data.sequenceShift
+                    )
 
-    let data = req.body
+                    shiftCompletion.then(
+                        () => {
+                            console.log('shiftCompletion done.')
+                            resolve()
+                        },
+                        (err) => {
+                            reject(err)
+                        }
+                    )
+                } else resolve()
+            })
 
-    let getBoard = new Promise((resolve, reject) => {
-        Board.findById(req.params.boardId, (err, docs) => {
-            if (err) {
-                reject(err)
-            } else {
-                resolve(docs)
-            }
-        })
-    })
+            Promise.all([nameUpdate, sequenceUpdate]).then(
+                () => {
+                    board.markModified('lanes')
+                    board.save(function (err) {
+                        if (err) {
+                            console.error(err)
+                            return next(new errors.InternalError(err.message))
+                        }
 
-    getBoard.then(
-        (board) => {
-            board.updateOne('lanes', {
-                $push: {
-                    $each: [board.lanes.id(req.params.laneId)],
-                    $position: data.newIndex,
+                        res.setHeader('Access-Control-Allow-Origin', '*')
+                        res.send(204)
+                        next()
+                    })
                 },
-            })
-            board.markModified('lanes')
-            board.save(function (err) {
-                if (err) {
+                (err) => {
                     console.error(err)
-                    return next(new errors.InternalError(err.message))
+                    next(new errors.InternalError(err.message))
                 }
-
-                res.setHeader('Access-Control-Allow-Origin', '*')
-                res.send(204)
-                next()
-            })
+            )
         },
         (err) => {
             console.error(err)
@@ -193,6 +175,5 @@ module.exports = (server) => {
     server.post('/boards/:boardId/lanes', addLane)
     server.get('/boards/:boardId/lanes', getLanes)
     server.patch('/boards/:boardId/lanes/:laneId', updateLane)
-    server.put('/boards/:boardId/lanes/:laneId', moveLane)
     server.del('/boards/:boardId/lanes/:laneId', deleteLane)
 }
