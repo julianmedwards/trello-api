@@ -16,7 +16,7 @@ function addCard(req, res, next) {
     Board.findById(req.params.boardId, (err, board) => {
         if (err) {
             console.error(err)
-            next(new errors.InternalError(err.message))
+            return next(new errors.InternalError(err.message))
         } else {
             const lane = board.lanes.id(req.params.laneId)
 
@@ -42,7 +42,7 @@ function getCards(req, res, next) {
     Board.findById(req.params.boardId, (err, board) => {
         if (err) {
             console.error(err)
-            next(new errors.InternalError(err.message))
+            return next(new errors.InternalError(err.message))
         } else {
             const lane = board.lanes.id(req.params.laneId)
 
@@ -65,7 +65,7 @@ function updateCard(req, res, next) {
     Lane.findById(req.params.laneId, (err, lane) => {
         if (err) {
             console.error(err)
-            next(new errors.InternalError(err.message))
+            return next(new errors.InternalError(err.message))
         } else {
             // -- unimplemented
 
@@ -79,7 +79,7 @@ function deleteCard(req, res, next) {
     Board.findById(req.params.boardId, (err, board) => {
         if (err) {
             console.error(err)
-            next(new errors.InternalError(err.message))
+            return next(new errors.InternalError(err.message))
         } else {
             const lane = board.lanes.id(req.params.laneId)
             lane.cards.id(req.params.cardId).remove()

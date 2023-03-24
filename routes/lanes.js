@@ -15,7 +15,7 @@ function addLane(req, res, next) {
     Board.findById(req.params.boardId, (err, board) => {
         if (err) {
             console.error(err)
-            next(new errors.InternalError(err.message))
+            return next(new errors.InternalError(err.message))
         } else {
             data.sequence = board.lanes.length
             let lane = new Lane(data)
@@ -38,7 +38,7 @@ function getLanes(req, res, next) {
     Board.findById(req.params.boardId, (err, board) => {
         if (err) {
             console.error(err)
-            next(new errors.InternalError(err.message))
+            return next(new errors.InternalError(err.message))
         } else {
             Board.sequenceLanes(board)
 
@@ -60,7 +60,7 @@ function updateLane(req, res, next) {
     Board.findById(req.params.boardId, (err, board) => {
         if (err) {
             console.error(err)
-            next(new errors.InternalError(err.message))
+            return next(new errors.InternalError(err.message))
         } else {
             const updatedLane = board.lanes.id(req.params.laneId)
 
@@ -90,7 +90,7 @@ function deleteLane(req, res, next) {
     Board.findById(req.params.boardId, (err, board) => {
         if (err) {
             console.error(err)
-            next(new errors.InternalError(err.message))
+            return next(new errors.InternalError(err.message))
         } else {
             board.lanes.id(req.params.laneId).remove()
             board.save(function (err) {

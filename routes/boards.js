@@ -41,8 +41,12 @@ function getBoard(req, res, next) {
     Board.findById(req.params.id, (err, board) => {
         if (err) {
             console.error(err)
-            next(new errors.InternalError(err.message))
+            return next(new errors.InternalError(err.message))
         } else {
+            if (!board) {
+                res.send(404)
+                return next()
+            }
             Board.sequenceLanes(board)
             res.send(board)
             next()
