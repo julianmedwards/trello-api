@@ -54,8 +54,37 @@ function getBoard(req, res, next) {
     })
 }
 
+function updateBoard(req, res, next) {
+    if (!req.is('application/json')) {
+        return next(
+            new errors.InvalidContentError("Expects 'application/json'")
+        )
+    }
+
+    let data = req.body
+
+    Board.findById(req.params.id, (err, board) => {
+        if (err) {
+            console.error(err)
+            return next(new errors.InternalError(err.message))
+        } else {
+            board.boardName = data.boardName
+            board.save(function (err) {
+                if (err) {
+                    console.error(err)
+                    return next(new errors.InternalError(err.message))
+                }
+
+                res.send(204)
+                next()
+            })
+        }
+    })
+}
+
 module.exports = (server) => {
     server.post('/boards', addBoard)
     server.get('/boards', getBoards)
     server.get('/boards/:id', getBoard)
+    server.patch('/boards/:id', updateBoard)
 }
