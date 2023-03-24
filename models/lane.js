@@ -42,5 +42,16 @@ LaneSchema.statics.shiftSequence = async function (
     movedLane.sequence = newSequence
 }
 
+LaneSchema.statics.sequenceCards = function (lane) {
+    lane.cards.sort((a, b) => {
+        if (a.sequence < b.sequence) {
+            return -1
+        }
+        if (a.sequence > b.sequence) {
+            return 1
+        }
+    })
+}
+
 const Lane = mongoose.model('Lane', LaneSchema)
 module.exports = Lane
