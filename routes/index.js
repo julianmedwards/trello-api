@@ -1,4 +1,5 @@
 module.exports = (server) => {
-    require('./boards/lanes')(server)
+    require('./lanes')(server)
     require('./boards')(server)
+    require('./cards')(server)
 }

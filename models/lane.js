@@ -1,4 +1,5 @@
 const mongoose = require('mongoose')
+const errors = require('restify-errors')
 const mongooseStringQuery = require('mongoose-string-query')
 
 const Card = require('../models/card')
@@ -20,57 +21,25 @@ LaneSchema.plugin(mongooseStringQuery)
 LaneSchema.index({sequence: 1, type: -1})
 
 LaneSchema.statics.shiftSequence = async function (
-    Board,
     board,
-    movedLaneId,
+    movedLane,
     sequenceShift
 ) {
-    return new Promise(async (resolve, reject) => {
-        console.log('starting shift promise sequence')
-        const lanes = board.lanes
-        const movedLane = board.lanes.id(movedLaneId)
-        const newSequence = movedLane.sequence + sequenceShift
+    const lanes = board.lanes
+    const newSequence = movedLane.sequence + sequenceShift
 
-        if (lanes.length < 2) {
-            reject(
-                new errors.InternalError(
-                    'Called Lane.shiftSequence without multiple lanes.'
-                )
-            )
-        }
+    if (lanes.length < 2) {
+        throw new errors.InternalError(
+            'Called Lane.shiftSequence without multiple lanes.'
+        )
+    }
 
-        // https://mongoplayground.net/p/W92qeExpfVu
-        const pipeline = [
-            {
-                $match: {
-                    _id: mongoose.Types.ObjectId(board.id),
-                },
-            },
-            {
-                $project: {
-                    lanes: {
-                        $filter: {
-                            input: '$lanes',
-                            cond: {
-                                $eq: ['$$this.sequence', newSequence],
-                            },
-                        },
-                    },
-                },
-            },
-        ]
-        Board.aggregate(pipeline, (err, doc) => {
-            if (err) {
-                reject(new errors.InternalError(err.message))
-            }
-            const otherLane = board.lanes.id(doc[0].lanes[0]._id)
-            otherLane.sequence = movedLane.sequence
-            movedLane.sequence = newSequence
-
-            console.log('resolving')
-            resolve()
-        })
+    const otherLane = board.lanes.find((lane) => {
+        return lane.sequence === newSequence
     })
+
+    otherLane.sequence = movedLane.sequence
+    movedLane.sequence = newSequence
 }
 
 const Lane = mongoose.model('Lane', LaneSchema)

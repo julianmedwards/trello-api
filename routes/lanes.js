@@ -1,8 +1,7 @@
 const errors = require('restify-errors')
-const mongoose = require('mongoose')
 
-const Board = require('../../models/board')
-const Lane = require('../../models/lane')
+const Board = require('../models/board')
+const Lane = require('../models/lane')
 
 function addLane(req, res, next) {
     if (!req.is('application/json')) {
@@ -12,7 +11,6 @@ function addLane(req, res, next) {
     }
 
     let data = req.body
-    console.log(typeof data)
 
     let getBoard = new Promise((resolve, reject) => {
         Board.findById(req.params.boardId, (err, docs) => {
@@ -92,23 +90,9 @@ function updateLane(req, res, next) {
 
             const sequenceUpdate = new Promise((resolve, reject) => {
                 if (data.sequenceShift) {
-                    console.log('to start shiftCompletion.')
-                    const shiftCompletion = Lane.shiftSequence(
-                        Board,
-                        board,
-                        updatedLane,
-                        data.sequenceShift
-                    )
+                    Lane.shiftSequence(board, updatedLane, data.sequenceShift)
 
-                    shiftCompletion.then(
-                        () => {
-                            console.log('shiftCompletion done.')
-                            resolve()
-                        },
-                        (err) => {
-                            reject(err)
-                        }
-                    )
+                    resolve()
                 } else resolve()
             })
 
