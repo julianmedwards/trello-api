@@ -1,4 +1,4 @@
-const {default: mongoose} = require('mongoose')
+const mongoose = require('mongoose')
 const errors = require('restify-errors')
 
 const Board = require('../models/board')
@@ -38,12 +38,13 @@ function getBoards(req, res, next) {
 }
 
 function getBoard(req, res, next) {
-    Board.getSequencedBoard(req.params.id, (err, docs) => {
+    Board.findById(req.params.id, (err, board) => {
         if (err) {
             console.error(err)
             next(new errors.InternalError(err.message))
         } else {
-            res.send(docs[0])
+            Board.sequenceLanes(board)
+            res.send(board)
             next()
         }
     })

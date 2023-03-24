@@ -12,18 +12,11 @@ function addLane(req, res, next) {
 
     let data = req.body
 
-    let getBoard = new Promise((resolve, reject) => {
-        Board.findById(req.params.boardId, (err, docs) => {
-            if (err) {
-                reject(err)
-            } else {
-                resolve(docs)
-            }
-        })
-    })
-
-    getBoard.then(
-        (board) => {
+    Board.findById(req.params.boardId, (err, board) => {
+        if (err) {
+            console.error(err)
+            next(new errors.InternalError(err.message))
+        } else {
             data.sequence = board.lanes.length
             let lane = new Lane(data)
             board.lanes.push(lane)
@@ -34,25 +27,22 @@ function addLane(req, res, next) {
                     return next(new errors.InternalError(err.message))
                 }
 
-                res.setHeader('Access-Control-Allow-Origin', '*')
                 res.send(201, {laneId: lane._id})
                 next()
             })
-        },
-        (err) => {
-            console.error(err)
-            next(new errors.InternalError(err.message))
         }
-    )
+    })
 }
 
 function getLanes(req, res, next) {
-    Board.getSequencedLanes(req.params.boardId, (err, docs) => {
+    Board.findById(req.params.boardId, (err, board) => {
         if (err) {
             console.error(err)
             next(new errors.InternalError(err.message))
         } else {
-            res.send(docs[0])
+            Board.sequenceLanes(board)
+
+            res.send(board.lanes)
             next()
         }
     })
@@ -67,75 +57,41 @@ function updateLane(req, res, next) {
 
     let data = req.body
 
-    let getBoard = new Promise((resolve, reject) => {
-        Board.findById(req.params.boardId, (err, docs) => {
-            if (err) {
-                reject(err)
-            } else {
-                resolve(docs)
-            }
-        })
-    })
-
-    getBoard.then(
-        (board) => {
-            const updatedLane = board.lanes.id(req.params.laneId)
-
-            const nameUpdate = new Promise((resolve, reject) => {
-                if (data.laneName) {
-                    updatedLane.laneName = data.laneName
-                }
-                resolve()
-            })
-
-            const sequenceUpdate = new Promise((resolve, reject) => {
-                if (data.sequenceShift) {
-                    Lane.shiftSequence(board, updatedLane, data.sequenceShift)
-
-                    resolve()
-                } else resolve()
-            })
-
-            Promise.all([nameUpdate, sequenceUpdate]).then(
-                () => {
-                    board.markModified('lanes')
-                    board.save(function (err) {
-                        if (err) {
-                            console.error(err)
-                            return next(new errors.InternalError(err.message))
-                        }
-
-                        res.setHeader('Access-Control-Allow-Origin', '*')
-                        res.send(204)
-                        next()
-                    })
-                },
-                (err) => {
-                    console.error(err)
-                    next(new errors.InternalError(err.message))
-                }
-            )
-        },
-        (err) => {
+    Board.findById(req.params.boardId, (err, board) => {
+        if (err) {
             console.error(err)
             next(new errors.InternalError(err.message))
+        } else {
+            const updatedLane = board.lanes.id(req.params.laneId)
+
+            if (data.laneName) {
+                updatedLane.laneName = data.laneName
+            }
+
+            if (data.sequenceShift) {
+                Lane.shiftSequence(board, updatedLane, data.sequenceShift)
+            }
+
+            board.markModified('lanes')
+            board.save(function (err) {
+                if (err) {
+                    console.error(err)
+                    return next(new errors.InternalError(err.message))
+                }
+
+                res.send(204)
+                next()
+            })
         }
-    )
+    })
 }
 
 function deleteLane(req, res, next) {
-    let getBoard = new Promise((resolve, reject) => {
-        Board.findById(req.params.boardId, (err, docs) => {
-            if (err) {
-                reject(err)
-            } else {
-                resolve(docs)
-            }
-        })
-    })
-
-    getBoard.then(
-        (board) => {
+    Board.findById(req.params.boardId, (err, board) => {
+        if (err) {
+            console.error(err)
+            next(new errors.InternalError(err.message))
+        } else {
             board.lanes.id(req.params.laneId).remove()
             board.save(function (err) {
                 if (err) {
@@ -143,16 +99,11 @@ function deleteLane(req, res, next) {
                     return next(new errors.InternalError(err.message))
                 }
 
-                res.setHeader('Access-Control-Allow-Origin', '*')
                 res.send(204)
                 next()
             })
-        },
-        (err) => {
-            console.error(err)
-            next(new errors.InternalError(err.message))
         }
-    )
+    })
 }
 
 module.exports = (server) => {
