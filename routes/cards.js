@@ -21,7 +21,6 @@ function addCard(req, res, next) {
             const lane = board.lanes.id(req.params.laneId)
 
             data.sequence = lane.cards.length
-            console.log(data)
             let card = new Card(data)
             lane.cards.push(card)
 

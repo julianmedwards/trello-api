@@ -10,7 +10,7 @@ const CardSchema = new mongoose.Schema(
         },
         cardDescr: {
             type: String,
-            required: true,
+            default: '',
             trim: false,
         },
         sequence: Number,
