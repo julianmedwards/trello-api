@@ -62,15 +62,35 @@ function updateCard(req, res, next) {
 
     let data = req.body
 
-    Lane.findById(req.params.laneId, (err, lane) => {
+    Board.findById(req.params.boardId, (err, board) => {
         if (err) {
             console.error(err)
             return next(new errors.InternalError(err.message))
         } else {
-            // -- unimplemented
+            const lane = board.lanes.id(req.params.laneId)
+            const updatedCard = lane.cards.id(req.params.cardId)
 
-            res.send(204)
-            next()
+            if (data.cardName) {
+                updatedCard.cardName = data.cardName
+            }
+            if (data.cardDescr) {
+                updatedCard.cardDescr = data.cardDescr
+            }
+
+            if (data.sequenceShift) {
+                Card.shiftSequence(lane, updatedCard, data.sequenceShift)
+            }
+
+            board.markModified('lanes')
+            board.save(function (err) {
+                if (err) {
+                    console.error(err)
+                    return next(new errors.InternalError(err.message))
+                }
+
+                res.send(204)
+                next()
+            })
         }
     })
 }
