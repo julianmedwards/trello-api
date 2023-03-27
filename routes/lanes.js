@@ -102,8 +102,6 @@ function deleteAndTransfer(req, res, next) {
                 destLane.cards.push(card.toObject())
             })
 
-            // Card resequencing not working after delete and transfer
-
             Lane.resequence(board.lanes, startLane.sequence)
 
             Card.resequence(destLane.cards, nextSequence)

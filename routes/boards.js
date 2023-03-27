@@ -1,4 +1,3 @@
-const mongoose = require('mongoose')
 const errors = require('restify-errors')
 
 const Board = require('../models/board')

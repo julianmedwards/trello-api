@@ -1,5 +1,4 @@
 const errors = require('restify-errors')
-const mongoose = require('mongoose')
 
 const Board = require('../models/board')
 const Lane = require('../models/lane')
