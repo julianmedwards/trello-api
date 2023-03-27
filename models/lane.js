@@ -53,5 +53,11 @@ LaneSchema.statics.sequenceCards = function (lane) {
     })
 }
 
+LaneSchema.statics.resequence = function (lanes, startSequence) {
+    for (let i = startSequence; i < lanes.length; i++) {
+        lanes[i].sequence = i
+    }
+}
+
 const Lane = mongoose.model('Lane', LaneSchema)
 module.exports = Lane

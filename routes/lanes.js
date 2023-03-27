@@ -2,6 +2,7 @@ const errors = require('restify-errors')
 
 const Board = require('../models/board')
 const Lane = require('../models/lane')
+const Card = require('../models/card')
 
 function addLane(req, res, next) {
     if (!req.is('application/json')) {
@@ -86,13 +87,56 @@ function updateLane(req, res, next) {
     })
 }
 
+function deleteAndTransfer(req, res, next) {
+    Board.findById(req.params.boardId, (err, board) => {
+        if (err) {
+            console.error(err)
+            return next(new errors.InternalError(err.message))
+        } else {
+            const startLane = board.lanes.id(req.params.laneId)
+            const destLane = board.lanes.id(req.params.destinationLaneId)
+            const cards = startLane.cards
+            const nextSequence = destLane.cards.length
+
+            cards.forEach((card) => {
+                destLane.cards.push(card.toObject())
+            })
+
+            // Card resequencing not working after delete and transfer
+
+            Lane.resequence(board.lanes, startLane.sequence)
+
+            Card.resequence(destLane.cards, nextSequence)
+
+            startLane.remove()
+
+            board.save(function (err) {
+                if (err) {
+                    console.error(err)
+                    return next(new errors.InternalError(err.message))
+                }
+
+                res.setHeader('Access-Control-Allow-Origin', '*')
+                res.send(204)
+                next()
+            })
+        }
+    })
+}
+
 function deleteLane(req, res, next) {
     Board.findById(req.params.boardId, (err, board) => {
         if (err) {
             console.error(err)
             return next(new errors.InternalError(err.message))
         } else {
-            board.lanes.id(req.params.laneId).remove()
+            const lane = board.lanes.id(req.params.laneId)
+            const startSequence = lane.sequence
+
+            lane.remove()
+
+            Lane.resequence(board.lanes, startSequence)
+
             board.save(function (err) {
                 if (err) {
                     console.error(err)
@@ -110,5 +154,9 @@ module.exports = (server) => {
     server.post('/boards/:boardId/lanes', addLane)
     server.get('/boards/:boardId/lanes', getLanes)
     server.patch('/boards/:boardId/lanes/:laneId', updateLane)
+    server.patch(
+        '/boards/:boardId/lanes/:laneId/delete-and-transfer/:destinationLaneId',
+        deleteAndTransfer
+    )
     server.del('/boards/:boardId/lanes/:laneId', deleteLane)
 }
