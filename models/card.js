@@ -42,5 +42,11 @@ CardSchema.statics.shiftSequence = async function (
     movedCard.sequence = newSequence
 }
 
+CardSchema.statics.resequence = function (cards, startSequence) {
+    for (let i = startSequence; i < cards.length; i++) {
+        cards[i].sequence = i
+    }
+}
+
 const Card = mongoose.model('Card', CardSchema)
 module.exports = Card

@@ -1,4 +1,5 @@
 const errors = require('restify-errors')
+const mongoose = require('mongoose')
 
 const Board = require('../models/board')
 const Lane = require('../models/lane')
@@ -95,6 +96,41 @@ function updateCard(req, res, next) {
     })
 }
 
+function moveCardToLane(req, res, next) {
+    Board.findById(req.params.boardId, (err, board) => {
+        if (err) {
+            console.error(err)
+            return next(new errors.InternalError(err.message))
+        } else {
+            const startLane = board.lanes.id(req.params.laneId)
+            const destLane = board.lanes.id(req.params.destinationLaneId)
+            const card = startLane.cards.id(req.params.cardId)
+            const cardSequence = card.sequence
+
+            startLane.cards.pull(req.params.cardId)
+            destLane.cards.push(card.toObject())
+
+            // Change sequence to end of new lane
+            destLane.cards.id(req.params.cardId).sequence =
+                destLane.cards.length - 1
+
+            // Shift any cards in starting lane after moved card by 1
+            Card.resequence(startLane.cards, cardSequence)
+
+            board.save(function (err) {
+                if (err) {
+                    console.error(err)
+                    return next(new errors.InternalError(err.message))
+                }
+
+                res.setHeader('Access-Control-Allow-Origin', '*')
+                res.send(204)
+                next()
+            })
+        }
+    })
+}
+
 function deleteCard(req, res, next) {
     Board.findById(req.params.boardId, (err, board) => {
         if (err) {
@@ -122,5 +158,9 @@ module.exports = (server) => {
     server.post('/boards/:boardId/lanes/:laneId/cards', addCard)
     server.get('/boards/:boardId/lanes/:laneId/cards', getCards)
     server.patch('/boards/:boardId/lanes/:laneId/cards/:cardId', updateCard)
+    server.patch(
+        '/boards/:boardId/lanes/:laneId/cards/:cardId/move-to-lane/:destinationLaneId',
+        moveCardToLane
+    )
     server.del('/boards/:boardId/lanes/:laneId/cards/:cardId', deleteCard)
 }
