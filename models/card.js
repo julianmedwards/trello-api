@@ -15,7 +15,7 @@ const CardSchema = new mongoose.Schema(
         },
         sequence: Number,
     },
-    {minimize: false}
+    {minimize: false, toJSON: {virtuals: true}}
 )
 
 CardSchema.plugin(mongooseStringQuery)

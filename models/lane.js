@@ -14,7 +14,7 @@ const LaneSchema = new mongoose.Schema(
         cards: [Card.schema],
         sequence: Number,
     },
-    {minimize: false}
+    {minimize: false, toJSON: {virtuals: true}}
 )
 
 LaneSchema.plugin(mongooseStringQuery)

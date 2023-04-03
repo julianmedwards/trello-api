@@ -12,7 +12,7 @@ const BoardSchema = new mongoose.Schema(
         },
         lanes: [Lane.schema],
     },
-    {minimize: false}
+    {minimize: false, toJSON: {virtuals: true}}
 )
 
 BoardSchema.plugin(mongooseStringQuery)
